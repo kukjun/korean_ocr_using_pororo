@@ -17,16 +17,19 @@ This is a Korean OCR Python code using the Pororo library.
 
 ## Requirements
 
-- torch
-- torchvision
-- opencv-python
-
-You can install it from PyPI:
+You can packages install with [pipenv](https://pipenv.pypa.io/en/latest/):
 
 ```sh
-pip install torch
-pip install torchvision
-pip install opencv-python
+pipenv install
+```
+
+Then, you can run Python through the following commands:
+```sh
+pipenv run python main.py
+
+# Or using virtual env
+pipenv shell
+python main.py
 ```
 
 ## PORORO: Platform Of neuRal mOdels for natuRal language prOcessing

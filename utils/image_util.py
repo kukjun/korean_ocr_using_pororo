@@ -52,6 +52,8 @@ def put_text(image, text, x, y, color=(0, 255, 0), font_size=22):
         font = 'AppleGothic.ttf'
     elif platform.system() == 'Windows':
         font = 'malgun.ttf'
+    elif platform.system() == 'Linux':
+        font = 'NotoSansCJK-Regular.ttc'
 
     image_font = ImageFont.truetype(font, font_size)
     font = ImageFont.load_default()
