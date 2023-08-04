@@ -3,6 +3,7 @@ from abc import ABC, abstractmethod
 from pororo import Pororo
 from pororo.pororo import SUPPORTED_TASKS
 from utils.image_util import plt_imshow, put_text
+from utils.pre_processing import load_with_filter
 from easyocr import Reader
 import warnings
 
@@ -23,7 +24,8 @@ class BaseOcr(ABC):
         plt_imshow(img=self.img_path)
 
     def show_img_with_ocr(self, bounding, description, vertices, point):
-        img = cv2.imread(self.img_path)
+        img = cv2.imread(self.img_path) if isinstance(self.img_path, str) \
+            else self.img_path
         roi_img = img.copy()
         color = (0, 255, 0)
 
@@ -101,7 +103,11 @@ if __name__ == "__main__":
     p_ocr = PororoOcr()
     e_ocr = EasyOcr()
     image_path = input("Enter image path: ")
-    text = p_ocr.run_ocr(image_path, debug=True)
+
+    image = load_with_filter(image_path)
+    plt_imshow(img=image)
+
+    text = p_ocr.run_ocr(image, debug=True)
     print('Result :', text)
-    text = e_ocr.run_ocr(image_path, debug=True)
+    text = e_ocr.run_ocr(image, debug=True)
     print('Result :', text)
