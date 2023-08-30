@@ -33,7 +33,7 @@ def grayscale(image, blur=False):
     return cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
 # https://opencv-python.readthedocs.io/en/latest/doc/09.imageThresholding/imageThresholding.html
-def thresholding(image, mode="GENERAL",block_size=9, C=5):
+def thresholding(image, mode="GENERAL", block_size=9, C=5):
     if isEven(block_size):
         print("block_size to use odd")
         return;
@@ -45,15 +45,27 @@ def thresholding(image, mode="GENERAL",block_size=9, C=5):
     else:
         return cv2.threshold(image, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
 
+def normalization(image, mode="COLOR", result_size=None):
+    result_size = np.zeros(result_size) if result_size is not None else None
+
+    if mode == "COLOR":
+        return cv2.normalize(image, result_size, 0, 255, cv.NORM_MINMAX)
+
+    if mode == "GRAY":
+        return cv2.normalize(image, result_size, 0, 1.0, cv2.NORM_MINMAX, dtype=cv2.CV_32F)
+
 def equalization(image):
     return cv2.equalizeHist(image)
 
 # == Noise =====================================================================
 def remove_noise(image, kernel_size=3):
-    return cv2.medianBlur(image, ksize=kernel_size)
+    return cv2.fastNlMeansDenoisingColored(image, None, 10, 10, 7, 15)
 
 def blur(image, kernel=(3,3)):
     return cv2.GaussianBlur(gray, kernel, 0)
+
+def blur_median(image, kernel_size=3):
+    return cv2.medianBlur(image, ksize=kernel_size)
 
 # == Morphology ================================================================
 def dilation(image, kernel=np.ones((3,3),np.uint8)):
