@@ -27,7 +27,7 @@ class BaseOcr(ABC):
         img = cv2.imread(self.img_path) if isinstance(self.img_path, str) \
             else self.img_path
         roi_img = img.copy()
-        color = (0, 255, 0)
+        color = (0, 200, 0)
 
         x, y = point
         ocr_result =  self.ocr_result if bounding is None \
@@ -44,7 +44,7 @@ class BaseOcr(ABC):
             cv2.line(roi_img, topRight, bottomRight, color, 2)
             cv2.line(roi_img, bottomRight, bottomLeft, color, 2)
             cv2.line(roi_img, bottomLeft, topLeft, color, 2)
-            roi_img = put_text(roi_img, text, topLeft[0], topLeft[1] - 20, font_size=15)
+            roi_img = put_text(roi_img, text, topLeft[0], topLeft[1] - 20, color=color)
 
         plt_imshow(["Original", "ROI"], [img, roi_img], figsize=(16, 10))
 
@@ -150,16 +150,16 @@ class EasyPororoOcr(BaseOcr):
         return ocr_text
 
 if __name__ == "__main__":
-    p_ocr = PororoOcr()
-    e_ocr = EasyOcr()
+    # p_ocr = PororoOcr()
+    # e_ocr = EasyOcr()
     m_ocr = EasyPororoOcr()
     image_path = input("Enter image path: ")
 
     image = load_with_filter(image_path)
 
-    text = p_ocr.run_ocr(image, debug=True)
-    print('Pororo:', text)
-    text = e_ocr.run_ocr(image, debug=True)
-    print('EasyOCR:', text)
+    # text = p_ocr.run_ocr(image, debug=True)
+    # print('Pororo:', text)
+    # text = e_ocr.run_ocr(image, debug=True)
+    # print('EasyOCR:', text)
     text = m_ocr.run_ocr(image, debug=True)
-    print('EasyProroOCR:', text)
+    print('EasyPororoOCR:', text)
