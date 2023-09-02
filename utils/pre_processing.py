@@ -32,6 +32,9 @@ def isEven(num):
 def grayscale(image, blur=False):
     return cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
+def invert(image):
+    return cv2.bitwise_not(image)
+
 # https://opencv-python.readthedocs.io/en/latest/doc/09.imageThresholding/imageThresholding.html
 def thresholding(image, mode="GENERAL", block_size=9, C=5):
     if isEven(block_size):
@@ -58,35 +61,41 @@ def equalization(image):
     return cv2.equalizeHist(image)
 
 # == Noise =====================================================================
-def remove_noise(image, kernel_size=3):
-    return cv2.fastNlMeansDenoisingColored(image, None, 10, 10, 7, 15)
+def remove_noise(image, mode="COLOR"):
+    if mode == "COLOR":
+        return cv2.fastNlMeansDenoisingColored(image, None, 10, 10, 7, 15)
+    if mode == "GRAY":
+        return cv2.fastNlMeansDenoising(image, None, 10, 7, 21)
 
 def blur(image, kernel=(3,3)):
-    return cv2.GaussianBlur(gray, kernel, 0)
+    return cv2.GaussianBlur(image, kernel, 0)
 
 def blur_median(image, kernel_size=3):
     return cv2.medianBlur(image, ksize=kernel_size)
 
 # == Morphology ================================================================
-def dilation(image, kernel=np.ones((3,3),np.uint8)):
+def dilation(image, kernel=np.ones((3,3), np.uint8)):
     return cv2.dilate(image, kernel, iterations = 1)
 
-def erosion(image, kernel=np.ones((3,3),np.uint8)):
+def erosion(image, kernel=np.ones((3,3), np.uint8)):
     return cv2.erode(image, kernel, iterations = 1)
 
-def opening(image, kernel=np.ones((3,3),np.uint8)):
+def opening(image, kernel=np.ones((3,3), np.uint8)):
     return cv2.morphologyEx(image, cv2.MORPH_OPEN, kernel)
 
-def closing(image, kernel=np.ones((3,3),np.uint8)):
+def closing(image, kernel=np.ones((3,3), np.uint8)):
     return cv2.morphologyEx(image, cv2.MORPH_CLOSE, kernel)
+
+def gradient(image, kernel=np.ones((3,3), np.uint8)):
+    return cv2.morphologyEx(image, cv2.MORPH_GRADIENT, kernel)
 
 def canny(image):
     return cv2.Canny(image, 100, 200)
 
 # == Others ====================================================================
 def resize(image, interpolation=cv2.INTER_CUBIC):
-    height, width = image.shape
-    factor = max(1, 20.0/ height)
+    height, width = image.shape[:2]
+    factor = max(1, (20.0 / height))
     size = (int(factor * width), int(factor * height))
     return cv2.resize(image, dsize=size, interpolation=interpolation)
 
