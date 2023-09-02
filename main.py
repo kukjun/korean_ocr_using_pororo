@@ -3,6 +3,7 @@ from abc import ABC, abstractmethod
 from pororo import Pororo
 from pororo.pororo import SUPPORTED_TASKS
 from utils.image_util import plt_imshow, put_text
+from utils.image_convert import convert_coord, crop
 from utils.pre_processing import load_with_filter, roi_filter
 from easyocr import Reader
 import warnings
@@ -105,14 +106,12 @@ class EasyPororoOcr(BaseOcr):
         self._detector = Reader(lang_list=lang, gpu=gpu, **kwargs).detect
         self.detect_result = None
 
-    def create_result(self, x1, x2, y1, y2):
-        rect = [[x1, y1], [x2, y1], [x2, y2], [x1, y2]]
-
-        roi = self.img[y1:y2, x1:x2]
+    def create_result(self, points):
+        roi = crop(self.img, points)
         result = self._ocr(roi_filter(roi))
         text = " ".join(result)
 
-        return [rect, text]
+        return [points, text]
 
     def run_ocr(self, img_path: str, debug: bool = False, **kwargs):
         self.img_path = img_path
@@ -121,22 +120,16 @@ class EasyPororoOcr(BaseOcr):
         self._ocr = Pororo(task="ocr", lang="ko", model="brainocr", **kwargs)
 
         self.detect_result = self._detector(self.img, slope_ths=0.3, height_ths=1)
+        if debug:
+            print(self.detect_result)
+
         horizontal_list, free_list = self.detect_result
-        horizontal_rois = [[
-            round(point[0]), round(point[1]),
-            round(point[2]), round(point[3])
-        ] for point in horizontal_list[0]]
 
-        free_rois = [[
-            round(min(pos[0] for pos in posns)), round(max(pos[0] for pos in posns)),
-            round(min(pos[1] for pos in posns)), round(max(pos[1] for pos in posns))
-        ] for posns in free_list[0]]
-
-        rois = horizontal_rois + free_rois
+        rois = [convert_coord(point) for point in horizontal_list[0]] + free_list[0]
 
         self.ocr_result = list(filter(
             lambda result: len(result[1]) > 0,
-            [self.create_result(roi[0], roi[1], roi[2], roi[3]) for roi in rois]
+            [self.create_result(roi) for roi in rois]
         ))
 
         if len(self.ocr_result) != 0:
