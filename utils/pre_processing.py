@@ -52,7 +52,7 @@ def normalization(image, mode="COLOR", result_size=None):
     result_size = np.zeros(result_size) if result_size is not None else None
 
     if mode == "COLOR":
-        return cv2.normalize(image, result_size, 0, 255, cv.NORM_MINMAX)
+        return cv2.normalize(image, result_size, 0, 255, cv2.NORM_MINMAX)
 
     if mode == "GRAY":
         return cv2.normalize(image, result_size, 0, 1.0, cv2.NORM_MINMAX, dtype=cv2.CV_32F)
