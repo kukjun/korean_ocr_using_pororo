@@ -117,7 +117,6 @@ class EasyPororoOcr(BaseOcr):
         super().__init__()
         self._detector = Reader(lang_list=lang, gpu=gpu, **kwargs).detect
         self.detect_result = None
-        self.device = torch.device("mps")
 
     def create_result(self, points):
         roi = crop(self.img, points)
