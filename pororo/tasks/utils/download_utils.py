@@ -135,6 +135,7 @@ def download_or_load_transformer(info: DownloadInfo) -> TransformerInfo:
 
     info.n_model += ".pt"
     model_path = os.path.join(info.root_dir, info.n_model)
+    print(f"model_path: {model_path}")
 
     # Download or load Transformer model
     model_type_dir = "/".join(model_path.split("/")[:-1])

@@ -1,6 +1,6 @@
 import cv2
 import numpy as np
-from PIL import Image
+from pdf2image import convert_from_path
 
 # https://tesseract-ocr.github.io/tessdoc/ImproveQuality.html
 # https://nanonets.com/blog/ocr-with-tesseract/
@@ -24,6 +24,20 @@ def roi_filter(image):
 def load_with_filter(path):
     image = load(path)
     return image_filter(image)
+
+def load_with_filter_by_pdf(path):
+    images = pdf_to_images(path)
+    results = []
+    for image in images:
+        cv_image = np.array(image)
+        results.append(image_filter(cv_image))
+    return results
+
+# PDF 파일을 이미지로 변환하는 함수
+def pdf_to_images(pdf_path):
+    images = convert_from_path(pdf_path)
+    return images
+
 
 def isEven(num):
     return num % 2 == 0

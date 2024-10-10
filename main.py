@@ -1,14 +1,19 @@
 import cv2
 from abc import ABC, abstractmethod
+
+import torch
+
 from pororo import Pororo
 from pororo.pororo import SUPPORTED_TASKS
+from sakak_ocr.fine_turning import fine_turning_test
 from utils.image_util import plt_imshow, put_text
 from utils.image_convert import convert_coord, crop
-from utils.pre_processing import load_with_filter, roi_filter
+from utils.pre_processing import load_with_filter, roi_filter, load_with_filter_by_pdf
 from easyocr import Reader
 import warnings
 
 warnings.filterwarnings('ignore')
+
 
 class BaseOcr(ABC):
     def __init__(self):
@@ -31,7 +36,7 @@ class BaseOcr(ABC):
         color = (0, 200, 0)
 
         x, y = point
-        ocr_result =  self.ocr_result if bounding is None \
+        ocr_result = self.ocr_result if bounding is None \
             else self.ocr_result[bounding]
         for text_result in ocr_result:
             text = text_result[description]
@@ -49,9 +54,14 @@ class BaseOcr(ABC):
 
         plt_imshow(["Original", "ROI"], [img, roi_img], figsize=(16, 10))
 
+        output_path = "roi_image.png"  # 원하는 경로와 파일 이름으로 변경
+        cv2.imwrite(output_path, roi_img)
+
+
     @abstractmethod
     def run_ocr(self, img_path: str, debug: bool = False):
         pass
+
 
 class PororoOcr(BaseOcr):
     def __init__(self, model: str = "brainocr", lang: str = "ko", **kwargs):
@@ -80,6 +90,7 @@ class PororoOcr(BaseOcr):
     def get_available_models():
         return SUPPORTED_TASKS["ocr"].get_available_models()
 
+
 # https://www.jaided.ai/easyocr/documentation/
 class EasyOcr(BaseOcr):
     def __init__(self, lang: list[str] = ["ko", "en"], gpu=False, **kwargs):
@@ -100,11 +111,13 @@ class EasyOcr(BaseOcr):
 
         return ocr_text
 
+
 class EasyPororoOcr(BaseOcr):
     def __init__(self, lang: list[str] = ["ko", "en"], gpu=False, **kwargs):
         super().__init__()
         self._detector = Reader(lang_list=lang, gpu=gpu, **kwargs).detect
         self.detect_result = None
+        self.device = torch.device("mps")
 
     def create_result(self, points):
         roi = crop(self.img, points)
@@ -118,41 +131,82 @@ class EasyPororoOcr(BaseOcr):
         self.img = cv2.imread(img_path) if isinstance(img_path, str) \
             else self.img_path
         self._ocr = Pororo(task="ocr", lang="ko", model="brainocr", **kwargs)
-
         self.detect_result = self._detector(self.img, slope_ths=0.3, height_ths=1)
         if debug:
             print(self.detect_result)
-
         horizontal_list, free_list = self.detect_result
-
         rois = [convert_coord(point) for point in horizontal_list[0]] + free_list[0]
-
         self.ocr_result = list(filter(
             lambda result: len(result[1]) > 0,
             [self.create_result(roi) for roi in rois]
         ))
-
         if len(self.ocr_result) != 0:
             ocr_text = list(map(lambda result: result[1], self.ocr_result))
         else:
             ocr_text = "No text detected."
-
-        if debug:
-            self.show_img_with_ocr(None, 1, 0, [0, 1])
+        # if debug:
+        #     self.show_img_with_ocr(None, 1, 0, [0, 1])
 
         return ocr_text
 
-if __name__ == "__main__":
+    def save_img_with_ocr(self, bounding, description, vertices, point, filename):
+        img = cv2.imread(self.img_path) if isinstance(self.img_path, str) \
+            else self.img_path
+        roi_img = img.copy()
+        color = (0, 200, 0)
+
+        x, y = point
+        ocr_result = self.ocr_result if bounding is None \
+            else self.ocr_result[bounding]
+        for text_result in ocr_result:
+            text = text_result[description]
+            rect = text_result[vertices]
+
+            topLeft, topRight, bottomRight, bottomLeft = [
+                (round(point[x]), round(point[y])) for point in rect
+            ]
+
+            cv2.line(roi_img, topLeft, topRight, color, 2)
+            cv2.line(roi_img, topRight, bottomRight, color, 2)
+            cv2.line(roi_img, bottomRight, bottomLeft, color, 2)
+            cv2.line(roi_img, bottomLeft, topLeft, color, 2)
+            roi_img = put_text(roi_img, text, topLeft[0], topLeft[1] - 20, color=color)
+        # plt_imshow(["Original", "ROI"], [img, roi_img], figsize=(16, 10))
+
+        print(f"filename: {filename}")
+        output_path = f"{filename}.png"  # 원하는 경로와 파일 이름으로 변경
+        cv2.imwrite(output_path, roi_img)
+
+
+def start_main():
     # p_ocr = PororoOcr()
     # e_ocr = EasyOcr()
     m_ocr = EasyPororoOcr()
     image_path = input("Enter image path: ")
+    result_path = "assets/results"
+    file_name = image_path.split("/")[-1].split(".")[0]
 
-    image = load_with_filter(image_path)
-
+    images = [load_with_filter(image_path)]
+    # images = load_with_filter_by_pdf(image_path)
+    text = []
+    for index, image in enumerate(images):  # enumerate()를 사용하여 인덱스와 값을 가져옴
+        page_text = ", ".join(m_ocr.run_ocr(image, debug=True))
+        m_ocr.save_img_with_ocr(None, 1, 0, [0, 1], f"{result_path}/{file_name}-{index + 1}")
+        text.append(page_text)
+    result = "\n\n".join(text)
+    with open(f"{result_path}/{file_name}.txt", "w") as f:
+        f.write(result)
     # text = p_ocr.run_ocr(image, debug=True)
     # print('Pororo:', text)
     # text = e_ocr.run_ocr(image, debug=True)
     # print('EasyOCR:', text)
-    text = m_ocr.run_ocr(image, debug=True)
-    print('EasyPororoOCR:', text)
+
+    # print('EasyPororoOCR:', text)
+
+def fine_turning():
+    fine_turning_test()
+
+if __name__ == "__main__":
+    start_main()
+    # fine_turning()
+
